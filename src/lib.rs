@@ -1,4 +1,70 @@
 //! A singly linked list intended to be chained along stack frames.
+//!
+//! This is useful for visitors and recursive functions.
+//!
+//! # Example: a JSON visitor
+//! ```
+//! # use serde_json::{json, Value};
+//! use stackstack::Stack;
+//!
+//! enum Path<'a> {
+//!     Key(&'a str),
+//!     Index(usize),
+//! }
+//!
+//! # const _: &str = stringify! {
+//! impl std::fmt::Display for Path<'_> { ... }
+//! # };
+//! # impl std::fmt::Display for Path<'_> {
+//! #     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//! #         match self {
+//! #             Path::Key(it) => f.write_str(it),
+//! #             Path::Index(it) => f.write_fmt(format_args!("{}", it)),
+//! #         }
+//! #     }
+//! # }
+//!
+//! /// Recursively visit JSON strings, recording their path and contents
+//! fn collect_strs<'a>(
+//!     v: &mut Vec<(String, &'a str)>, // <- visitor state
+//!     path: Stack<Path>,              // <- path
+//!     json: &'a serde_json::Value,    // <- visited item
+//! ) {
+//!     match json {
+//!         Value::String(it) => v.push((itertools::join(path.iter(), "."), it)),
+//!         //    iterate the path to the current node ~~^
+//!         Value::Array(arr) => {
+//!             for (ix, child) in arr.iter().enumerate() {
+//!                 collect_strs(v, path.pushed(Path::Index(ix)), child)
+//!                 // ^~~ recurse with a new path
+//!             }
+//!         }
+//!         Value::Object(obj) => {
+//!             for (k, child) in obj {
+//!                 collect_strs(v, path.pushed(Path::Key(k)), child)
+//!                 //                          ^~~ the new node is allocated on
+//!                 //                              the current (program) stack frame
+//!             }
+//!         },
+//!         _ => {}
+//!     }
+//! }
+//!
+//! let mut v = vec![];
+//! let json = json!({
+//!     "mary": {
+//!         "had": [
+//!             {"a": "little lamb"},
+//!             {"two": "yaks"}
+//!         ]
+//!     }
+//! });
+//! collect_strs(&mut v, Stack::Bottom, &json);
+//! assert_eq! { v, [
+//!     ("mary.had.0.a".into(), "little lamb"),
+//!     ("mary.had.1.two".into(), "yaks")
+//! ]}
+//! ```
 
 #![cfg_attr(not(test), no_std)]
 
