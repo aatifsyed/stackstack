@@ -178,6 +178,14 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
     }
 }
 
+impl<'a, T> IntoIterator for &'a Stack<'a, T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 /// Convenience macro for creating a [`Stack`] in a single stack frame.
 ///
 /// ```
