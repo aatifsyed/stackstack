@@ -2,5 +2,17 @@
 name = "stackstack"
 version = "0.1.0"
 edition = "2021"
+description = "A singly linked list intended to be chained along stack frames."
+license = "MIT OR Apache-2.0"
+homepage = "https://crates.io/crates/stackstack"
+documentation = "https://docs.rs/stackstack"
+repository = "https://github.com/aatifsyed/stackstack"
+categories = [
+    "rust-patterns",
+    "no-std::no-alloc",
+    "no-std",
+    "memory-management",
+    "data-structures",
+]
 
 [dependencies]
