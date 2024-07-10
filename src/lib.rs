@@ -74,6 +74,17 @@ impl<'a, T> Stack<'a, T> {
         }
         curr
     }
+    /// Execute the given closure on the current list with the given item appended.
+    ///
+    /// ```
+    /// # use stackstack::Stack;
+    /// Stack::of("a").with("b", |ab| {
+    ///     assert!(ab.iter().eq(&["a", "b"]))
+    /// })
+    /// ```
+    pub fn with<R>(&self, item: T, f: impl FnOnce(&Stack<'_, T>) -> R) -> R {
+        f(&self.pushed(item))
+    }
     /// Extend the current stack with each item from the given iterator, calling
     /// the given closure on the result.
     ///
@@ -82,19 +93,19 @@ impl<'a, T> Stack<'a, T> {
     /// ```
     /// use stackstack::Stack;
     /// let a = Stack::of("a");
-    /// a.on_chained(["b", "c", "d"], |abcd| {
+    /// a.with_all(["b", "c", "d"], |abcd| {
     ///     assert!(abcd.iter().eq(&["a", "b", "c", "d"]))
     /// })
     /// ```
-    pub fn on_chained<R>(
+    pub fn with_all<R>(
         &self,
-        chain: impl IntoIterator<Item = T>,
-        on: impl FnOnce(&Stack<'_, T>) -> R,
+        items: impl IntoIterator<Item = T>,
+        f: impl FnOnce(&Stack<'_, T>) -> R,
     ) -> R {
-        let mut chain = chain.into_iter();
+        let mut chain = items.into_iter();
         match chain.next() {
-            Some(head) => self.pushed(head).on_chained(chain, on),
-            None => on(self),
+            Some(head) => self.pushed(head).with_all(chain, f),
+            None => f(self),
         }
     }
     /// Return the number of items in the stack.
@@ -208,7 +219,7 @@ mod tests {
 
     #[test]
     fn on_chained() {
-        Stack::of(String::from("mary")).on_chained(
+        Stack::of(String::from("mary")).with_all(
             ["had".into(), "a".into(), "little".into(), "lamb".into()],
             |it| {
                 assert_eq!(
@@ -236,7 +247,7 @@ mod tests {
 
     #[test]
     fn get() {
-        Stack::of(String::from("mary")).on_chained(
+        Stack::of(String::from("mary")).with_all(
             ["had".into(), "a".into(), "little".into(), "lamb".into()],
             |it| {
                 assert_eq!(it.get(0).unwrap(), "mary");
@@ -251,7 +262,7 @@ mod tests {
 
     #[test]
     fn iter() {
-        Stack::of(String::from("mary")).on_chained(
+        Stack::of(String::from("mary")).with_all(
             ["had".into(), "a".into(), "little".into(), "lamb".into()],
             |it| {
                 assert_eq!(
@@ -263,7 +274,7 @@ mod tests {
     }
     #[test]
     fn rev() {
-        Stack::of(String::from("mary")).on_chained(
+        Stack::of(String::from("mary")).with_all(
             ["had".into(), "a".into(), "little".into(), "lamb".into()],
             |it| {
                 assert_eq!(
